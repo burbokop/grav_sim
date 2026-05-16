@@ -1,0 +1,22 @@
+[package]
+name = "grav-sim"
+edition = "2024"
+rust-version = "1.87"
+publish = false
+
+[dependencies]
+env_logger = "0.11"
+pollster = "0.4"
+wgpu = "27.0.1"
+winit = { version = "0.30.8", features = ["android-native-activity"] }
+vger = { git = "https://github.com/audulus/vger-rs.git", rev = "057bf36539ee6d40fc33c1fa88282b05ef619a90" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { version = "0.2.108" }
+wasm-bindgen-futures = { version = "0.4.58" }
+console_error_panic_hook = "0.1.5"
+console_log = "1"
+web-sys = { version = "0.3.85" }
+web-time = "1.1.0"
