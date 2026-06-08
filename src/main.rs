@@ -3,7 +3,6 @@ use winit::{
     application::ApplicationHandler,
     event::WindowEvent,
     event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy},
-    keyboard::KeyCode,
     window::Window,
 };
 
@@ -37,9 +36,9 @@ use std::time::{Duration, Instant};
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 
-use crate::game_state::GameState;
+use crate::game::game_state::GameState;
 
-mod game_state;
+mod game;
 
 const TICK_RATE_HZ: u64 = 60;
 const TIME_PER_TICK: Duration = Duration::from_nanos(1_000_000_000 / TICK_RATE_HZ);
@@ -69,6 +68,7 @@ struct App {
     proxy: EventLoopProxy<TriangleAction>,
     window: Option<Arc<Window>>,
     state: AppState,
+    start_time: Instant,
     last_time: Instant,
     accumulated_time: Duration,
 }
@@ -80,6 +80,7 @@ impl App {
             proxy: event_loop.create_proxy(),
             window: None,
             state: AppState::Uninitialized,
+            start_time: Instant::now(),
             last_time: Instant::now(),
             accumulated_time: Duration::ZERO,
         }
@@ -170,25 +171,31 @@ impl ApplicationHandler<TriangleAction> for App {
         });
     }
 
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
-        let current_time = Instant::now();
-        let frame_time = current_time.duration_since(self.last_time);
-        self.last_time = current_time;
-
-        self.accumulated_time += frame_time.min(Duration::from_millis(250));
-        while self.accumulated_time >= TIME_PER_TICK {
-            self.game_state.update();
-            self.accumulated_time -= TIME_PER_TICK;
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if self.game_state.exit_requested() {
+            event_loop.exit();
         }
 
         if let AppState::Running(wgpu_state) = &mut self.state {
             let size = wgpu_state.window.inner_size();
+
             if wgpu_state.config.width != size.width || wgpu_state.config.height != size.height {
                 wgpu_state.config.width = size.width;
                 wgpu_state.config.height = size.height;
                 wgpu_state
                     .surface
                     .configure(&wgpu_state.device, &wgpu_state.config);
+            }
+
+            let current_time = Instant::now();
+            let dt = current_time.duration_since(self.last_time);
+            self.last_time = current_time;
+
+            self.accumulated_time += dt.min(Duration::from_millis(250));
+            while self.accumulated_time >= TIME_PER_TICK {
+                self.game_state
+                    .update((0., 0., size.width as f32, size.height as f32).into(), dt);
+                self.accumulated_time -= TIME_PER_TICK;
             }
 
             wgpu_state.window.request_redraw();
@@ -214,6 +221,9 @@ impl ApplicationHandler<TriangleAction> for App {
         let AppState::Running(wgpu_state) = &mut self.state else {
             return;
         };
+
+        let now = Instant::now();
+        let window_size = wgpu_state.window.inner_size();
 
         match event {
             WindowEvent::Resized(new_size) => {
@@ -243,14 +253,18 @@ impl ApplicationHandler<TriangleAction> for App {
                 let view = frame
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
-                let size = wgpu_state.window.inner_size();
 
                 wgpu_state
                     .vger
-                    .begin(size.width as f32, size.height as f32, 1.0);
+                    .begin(window_size.width as f32, window_size.height as f32, 1.0);
 
-                self.game_state
-                    .render(&mut wgpu_state.vger, size.width as f32, size.height as f32);
+                let duration_since_start = now.duration_since(self.start_time);
+
+                self.game_state.render(
+                    &mut wgpu_state.vger,
+                    (0., 0., window_size.width as f32, window_size.height as f32).into(),
+                    duration_since_start,
+                );
 
                 let desc = wgpu::RenderPassDescriptor {
                     label: Some("Vger Render Pass"),
@@ -284,7 +298,9 @@ impl ApplicationHandler<TriangleAction> for App {
                 }
             }
             WindowEvent::CloseRequested => event_loop.exit(),
-            event => self.game_state.event(event),
+            event => self
+                .game_state
+                .handle_event(event, (window_size.width, window_size.height).into()),
         }
     }
 }
