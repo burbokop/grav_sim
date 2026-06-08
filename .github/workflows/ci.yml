@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+    tags-ignore:
+      - v*
+  pull_request:
+    branches: [ master ]
+  workflow_call:
+    secrets:
+      envPAT:
+        required: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        channel: [1.96.0]
+        target: [x86_64-unknown-linux-gnu, wasm32-unknown-unknown]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set channel & add target
+      run: |
+        rustup update
+        rustup default ${{matrix.channel}}
+        rustup target add ${{matrix.target}}
+
+    - name: Build
+      run: cargo build --release --verbose --target ${{matrix.target}}
+
+    - name: Run tests
+      if: ${{matrix.target != 'wasm32-unknown-unknown'}}
+      shell: bash
+      run: cargo test --release --verbose --target ${{matrix.target}}
+
+  check-format:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Rust format
+      run: cargo fmt --
+    - name: Suggest format changes
+      uses: reviewdog/action-suggester@v1
+      with:
+        tool_name: formatters
+        level: error
+        fail_level: warning
