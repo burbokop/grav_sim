@@ -1,52 +1,17 @@
-use burbomath::{
-    Angle, Ellipse, NonNeg, Point, Vector,
-    physics::{Kg, KgPerM3, M},
-    time::RelativeDuration,
-};
+use crate::game::{constants::G, world_object_model::WOMCelestialBody};
+use burbomath::{Angle, Ellipse, NonNeg, Point, Vector, time::RelativeDuration};
 use core::f32;
 use std::{rc::Weak, time::Duration};
-use vger::Color;
-
-use crate::game::constants::G;
-
-#[derive(Debug)]
-pub struct CelestialBody {
-    pub mass: Kg<f32>,
-    pub solid_radius: M<f32>,
-    pub atmosphere_radius: M<f32>,
-    pub solid_color: Color,
-    pub atmosphere_color: Color,
-}
-
-impl CelestialBody {
-    pub fn from_density(
-        density: KgPerM3<f32>,
-        solid_radius: M<f32>,
-        atmosphere_radius: M<f32>,
-        solid_color: Color,
-        atmosphere_color: Color,
-    ) -> Self {
-        let volume = solid_radius.cube() * (4. / 3. * f32::consts::PI);
-        let mass = volume * density;
-        Self {
-            mass,
-            solid_radius,
-            atmosphere_radius,
-            solid_color,
-            atmosphere_color,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct EllipticOrbit {
-    body: Weak<CelestialBody>,
+    body: Weak<WOMCelestialBody>,
     ellipse: Ellipse<f32>,
     anomaly: Angle<f32>,
 }
 
 impl EllipticOrbit {
-    pub fn new(body: Weak<CelestialBody>, ellipse: Ellipse<f32>, anomaly: Angle<f32>) -> Self {
+    pub fn new(body: Weak<WOMCelestialBody>, ellipse: Ellipse<f32>, anomaly: Angle<f32>) -> Self {
         Self {
             body,
             ellipse,
@@ -70,7 +35,7 @@ impl EllipticOrbit {
         self.ellipse.f0()
     }
 
-    pub fn body(&self) -> &Weak<CelestialBody> {
+    pub fn body(&self) -> &Weak<WOMCelestialBody> {
         &self.body
     }
 
@@ -169,6 +134,17 @@ impl EllipticOrbit {
             body: self.body.clone(),
             ellipse: new_ellipse,
             anomaly: new_anomaly,
+        }
+    }
+
+    pub fn map_center<F>(self, f: F) -> Self
+    where
+        F: FnOnce(Point<f32>) -> Point<f32>,
+    {
+        Self {
+            body: self.body,
+            ellipse: self.ellipse.map_center(f),
+            anomaly: self.anomaly,
         }
     }
 }

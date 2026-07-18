@@ -1,16 +1,24 @@
-use crate::game::{
-    constants::G,
-    draw::{
-        palette::{MANUEVER_ORBIT_COLOR, ORBIT_COLOR, Palette},
-        scene::{
-            celestial_body::draw_celestial_body, orbit::draw_elliptic_orbit, vessel::draw_vessel,
+use crate::{
+    game::{
+        constants::G,
+        draw::{
+            palette::{MANUEVER_ORBIT_COLOR, ORBIT_COLOR, Palette},
+            scene::{
+                celestial_body::draw_celestial_body_recursive, orbit::draw_elliptic_orbit,
+                vessel::draw_vessel,
+            },
         },
+        event_handler::EventHandler,
+        game_logic::GameLogic,
+        orbit::EllipticOrbit,
+        world_object_model::{WOMCelestialBody, WOMRoot},
     },
-    event_handler::EventHandler,
-    game_logic::GameLogic,
-    utils::{apply_transformation, into_vger_point, into_vger_rect},
+    utils::{
+        convertions::{into_vger_point, into_vger_rect},
+        misc::apply_transformation,
+    },
 };
-use burbomath::{Rect, camera::Camera};
+use burbomath::{Point, Rect, Vector, camera::Camera};
 use std::time::Duration;
 
 mod celestial_body;
@@ -34,13 +42,15 @@ pub(crate) fn draw_scene(
     apply_transformation(vger, camera.transformation());
 
     let compensatory_scale = 1. / camera.transformation().average_scale();
-    let body = game_logic.body();
+    let world = game_logic.world();
+    let vessel_orbit = orbit_to_global(world, game_logic.vessel_orbit().clone());
 
-    draw_celestial_body(vger, &body, game_logic.vessel_orbit().f0());
+    draw_celestial_body_recursive(vger, &world.central_body, (0., 0.).into());
 
     draw_elliptic_orbit(
         vger,
-        game_logic.vessel_orbit(),
+        game_logic.world(),
+        &vessel_orbit,
         ORBIT_COLOR,
         compensatory_scale,
     );
@@ -49,7 +59,7 @@ pub(crate) fn draw_scene(
         vger,
         palette,
         game_logic.vessel(),
-        game_logic.vessel_orbit(),
+        &vessel_orbit,
         G,
         compensatory_scale,
         duration_since_start,
@@ -57,7 +67,8 @@ pub(crate) fn draw_scene(
 
     if event_handler.manuever_planner_mode() {
         if let Some(manuever) = &game_logic.manuever() {
-            let manuever_point = manuever.delta_v_point(game_logic.vessel_orbit());
+            let manuever_orbit = orbit_to_global(world, manuever.orbit.clone());
+            let manuever_point = manuever.delta_v_point(&vessel_orbit);
 
             vger.fill_circle(
                 into_vger_point(manuever_point),
@@ -67,7 +78,8 @@ pub(crate) fn draw_scene(
 
             draw_elliptic_orbit(
                 vger,
-                &manuever.orbit,
+                world,
+                &manuever_orbit,
                 MANUEVER_ORBIT_COLOR,
                 compensatory_scale,
             );
@@ -75,4 +87,37 @@ pub(crate) fn draw_scene(
     }
 
     vger.restore();
+}
+
+fn trace_global_body_center(
+    current: &WOMCelestialBody,
+    target: &WOMCelestialBody,
+    origin: Point<f32>,
+) -> Option<Point<f32>> {
+    if current as *const WOMCelestialBody == target as *const WOMCelestialBody {
+        return Some(origin);
+    }
+
+    for satellite in &current.satellites {
+        match trace_global_body_center(
+            &satellite.body,
+            target,
+            origin + Vector::from_polar(satellite.orbit_radius.0, satellite.orbit_angle),
+        ) {
+            Some(center) => return Some(center),
+            None => continue,
+        }
+    }
+
+    None
+}
+
+fn orbit_to_global(world: &WOMRoot, orbit: EllipticOrbit) -> EllipticOrbit {
+    let vessel_parent_body = orbit.body().upgrade().unwrap();
+
+    let origin =
+        trace_global_body_center(&world.central_body, &vessel_parent_body, (0., 0.).into())
+            .unwrap();
+
+    orbit.map_center(|center| center.absolute(origin))
 }

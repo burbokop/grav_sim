@@ -1,18 +1,18 @@
-use crate::game::utils::color_from_hex;
-use vger::{Color, PaintIndex};
+use crate::utils::{color::Color, convertions::into_vger_color};
+use vger::PaintIndex;
 
-pub const BACKGROUND_COLOR: Color = color_from_hex(0xff130a17);
-pub const ORBIT_COLOR: Color = color_from_hex(0xff5472d6);
-pub const MANUEVER_ORBIT_COLOR: Color = color_from_hex(0xfff28b3d);
+pub const BACKGROUND_COLOR: vger::Color = into_vger_color(Color::from_u32(0xff130a17));
+pub const ORBIT_COLOR: vger::Color = into_vger_color(Color::from_u32(0xff5472d6));
+pub const MANUEVER_ORBIT_COLOR: vger::Color = into_vger_color(Color::from_u32(0xfff28b3d));
 
-pub const UI_STROKE_COLOR: Color = color_from_hex(0xaacccccc);
-pub const UI_BACKGROUND_COLOR: Color = color_from_hex(0x33000000);
-pub const UI_NEUTRAL_TEXT_COLOR: Color = color_from_hex(0xffffffff);
-pub const UI_PROGRADE_RETROGRADE_COLOR: Color = color_from_hex(0xffd7fe00);
-pub const UI_RADIAL_COLOR: Color = color_from_hex(0xff00d6d6);
-pub const UI_MANEUVER_COLOR: Color = color_from_hex(0xff0000d6);
+pub const UI_STROKE_COLOR: vger::Color = into_vger_color(Color::from_u32(0xaacccccc));
+pub const UI_BACKGROUND_COLOR: vger::Color = into_vger_color(Color::from_u32(0x33000000));
+pub const UI_NEUTRAL_TEXT_COLOR: vger::Color = into_vger_color(Color::from_u32(0xffffffff));
+pub const UI_PROGRADE_RETROGRADE_COLOR: vger::Color = into_vger_color(Color::from_u32(0xffd7fe00));
+pub const UI_RADIAL_COLOR: vger::Color = into_vger_color(Color::from_u32(0xff00d6d6));
+pub const UI_MANEUVER_COLOR: vger::Color = into_vger_color(Color::from_u32(0xff0000d6));
 
-pub const UI_TODO_COLOR: Color = color_from_hex(0xffff0026);
+pub const UI_TODO_COLOR: vger::Color = into_vger_color(Color::from_u32(0xffff0026));
 
 pub struct Palette {
     background: PaintIndex,

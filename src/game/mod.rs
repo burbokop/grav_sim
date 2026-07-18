@@ -1,10 +1,10 @@
+pub mod app_components;
 pub mod constants;
 pub mod draw;
 pub mod event_handler;
 pub mod font_provider;
 pub mod game_logic;
-pub mod game_state;
 pub mod manuever;
 pub mod orbit;
-pub mod utils;
 pub mod vessel;
+pub mod world_object_model;
