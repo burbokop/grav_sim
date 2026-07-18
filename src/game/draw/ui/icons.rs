@@ -1,8 +1,7 @@
+use crate::{game::draw::common::draw_circle, utils::convertions::into_vger_point};
 use burbomath::{Angle, Point, Vector};
 use std::time::Duration;
 use vger::PaintIndex;
-
-use crate::game::{draw::common::draw_circle, utils::into_vger_point};
 
 pub fn draw_flickering_circle(
     vger: &mut vger::Vger,

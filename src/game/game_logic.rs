@@ -1,20 +1,26 @@
-use crate::game::{
-    constants::G,
-    event_handler::{AutoRotationTarget, EventHandler},
-    manuever::Manuever,
-    orbit::{CelestialBody, EllipticOrbit},
-    utils::color_from_hex,
-    vessel::{KinematicBody, Vessel},
+use crate::{
+    game::{
+        constants::G,
+        event_handler::{AutoRotationTarget, EventHandler},
+        manuever::Manuever,
+        orbit::EllipticOrbit,
+        vessel::{KinematicBody, Vessel},
+        world_object_model::{WOMCelestialBody, WOMCelestialBodyType, WOMRoot, WOMSatellite},
+    },
+    utils::color::Color,
 };
 use burbomath::{
     Angle, DeltaAngle, Ellipse, NonNeg, Pi as _,
     physics::{Kg, M, M3},
 };
-use std::{rc::Rc, time::Duration};
+use std::{
+    rc::{Rc, Weak},
+    time::Duration,
+};
 
 pub struct GameLogic {
     vessel: Vessel,
-    body: Rc<CelestialBody>,
+    world: WOMRoot,
     vessel_orbit: EllipticOrbit,
     manuever: Option<Manuever>,
     time_speed: f32,
@@ -28,12 +34,45 @@ impl GameLogic {
             Angle::from_degrees(0_f32),
         );
 
-        let body = Rc::new(CelestialBody::from_density(
+        let body0 = Rc::new(WOMCelestialBody::from_density(
+            WOMCelestialBodyType::SolidRock,
             Kg(5513.) / M3(1.),
             M(1000.),
-            M(1010.),
-            color_from_hex(0xffeb4034),
-            color_from_hex(0x8891b8ff),
+            M(10.),
+            Color::from_u32(0xffeb4034),
+            Color::from_u32(0x8891b8ff),
+            vec![],
+        ));
+
+        let body1 = Rc::new(WOMCelestialBody::from_density(
+            WOMCelestialBodyType::SolidRock,
+            Kg(5513.) / M3(1.),
+            M(500.),
+            M(10.),
+            Color::from_u32(0xf4eb8074),
+            Color::from_u32(0xff91b8ff),
+            vec![],
+        ));
+
+        let central_body = Rc::new(WOMCelestialBody::from_density(
+            WOMCelestialBodyType::Star,
+            Kg(1408.) / M3(1.),
+            M(10000.),
+            M(10.),
+            Color::from_u32(0xff884034),
+            Color::from_u32(0xffffb8ff),
+            vec![
+                WOMSatellite {
+                    body: body0.clone(),
+                    orbit_radius: M(100000.),
+                    orbit_angle: Angle::from_degrees(123_f32),
+                },
+                WOMSatellite {
+                    body: body1,
+                    orbit_radius: M(400000.),
+                    orbit_angle: Angle::from_degrees(21_f32),
+                },
+            ],
         ));
 
         Self {
@@ -46,9 +85,11 @@ impl GameLogic {
                     NonNeg::new(1000.).unwrap(),
                 ),
             },
-            body: body.clone(),
+            world: WOMRoot {
+                central_body: central_body.clone(),
+            },
             vessel_orbit: EllipticOrbit::new(
-                Rc::downgrade(&body),
+                Rc::downgrade(&body0),
                 ellipse,
                 Angle::from_radians(0.),
             ),
@@ -65,8 +106,8 @@ impl GameLogic {
         self.time_speed
     }
 
-    pub fn body(&self) -> &Rc<CelestialBody> {
-        &self.body
+    pub fn world(&self) -> &WOMRoot {
+        &self.world
     }
 
     pub fn init_manuever(&mut self) {

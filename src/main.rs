@@ -36,9 +36,10 @@ use std::time::{Duration, Instant};
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 
-use crate::game::game_state::GameState;
+use crate::game::app_components::AppComponents;
 
 mod game;
+mod utils;
 
 const TICK_RATE_HZ: u64 = 60;
 const TIME_PER_TICK: Duration = Duration::from_nanos(1_000_000_000 / TICK_RATE_HZ);
@@ -64,7 +65,7 @@ enum AppState {
 }
 
 struct App {
-    game_state: GameState,
+    app_components: AppComponents,
     proxy: EventLoopProxy<TriangleAction>,
     window: Option<Arc<Window>>,
     state: AppState,
@@ -76,7 +77,7 @@ struct App {
 impl App {
     fn new(event_loop: &EventLoop<TriangleAction>) -> Self {
         Self {
-            game_state: GameState::new(),
+            app_components: AppComponents::new(),
             proxy: event_loop.create_proxy(),
             window: None,
             state: AppState::Uninitialized,
@@ -172,7 +173,7 @@ impl ApplicationHandler<TriangleAction> for App {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if self.game_state.exit_requested() {
+        if self.app_components.exit_requested() {
             event_loop.exit();
         }
 
@@ -193,7 +194,7 @@ impl ApplicationHandler<TriangleAction> for App {
 
             self.accumulated_time += dt.min(Duration::from_millis(250));
             while self.accumulated_time >= TIME_PER_TICK {
-                self.game_state
+                self.app_components
                     .update((0., 0., size.width as f32, size.height as f32).into(), dt);
                 self.accumulated_time -= TIME_PER_TICK;
             }
@@ -260,7 +261,7 @@ impl ApplicationHandler<TriangleAction> for App {
 
                 let duration_since_start = now.duration_since(self.start_time);
 
-                self.game_state.render(
+                self.app_components.render(
                     &mut wgpu_state.vger,
                     (0., 0., window_size.width as f32, window_size.height as f32).into(),
                     duration_since_start,
@@ -299,7 +300,7 @@ impl ApplicationHandler<TriangleAction> for App {
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => self
-                .game_state
+                .app_components
                 .handle_event(event, (window_size.width, window_size.height).into()),
         }
     }

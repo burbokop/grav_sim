@@ -1,18 +1,21 @@
-use crate::game::{
-    draw::{
-        common::{draw_circle, draw_text, draw_text_centered, draw_vector_with_icon},
-        palette::{
-            Palette, UI_MANEUVER_COLOR, UI_NEUTRAL_TEXT_COLOR, UI_PROGRADE_RETROGRADE_COLOR,
-            UI_STROKE_COLOR, UI_TODO_COLOR,
+use crate::{
+    game::{
+        draw::{
+            common::{draw_circle, draw_text, draw_text_centered, draw_vector_with_icon},
+            palette::{
+                Palette, UI_MANEUVER_COLOR, UI_NEUTRAL_TEXT_COLOR, UI_PROGRADE_RETROGRADE_COLOR,
+                UI_STROKE_COLOR, UI_TODO_COLOR,
+            },
+            ui::icons::{
+                draw_active_maneuver_icon, draw_active_prograde_icon, draw_active_radial_in_icon,
+                draw_active_radial_out_icon, draw_active_retrograde_icon, draw_maneuver_icon,
+                draw_prograde_icon, draw_radial_in_icon, draw_radial_out_icon,
+                draw_retrograde_icon,
+            },
         },
-        ui::icons::{
-            draw_active_maneuver_icon, draw_active_prograde_icon, draw_active_radial_in_icon,
-            draw_active_radial_out_icon, draw_active_retrograde_icon, draw_maneuver_icon,
-            draw_prograde_icon, draw_radial_in_icon, draw_radial_out_icon, draw_retrograde_icon,
-        },
+        event_handler::AutoRotationTarget,
     },
-    event_handler::AutoRotationTarget,
-    utils::{into_vger_point, into_vger_rect},
+    utils::convertions::{into_vger_point, into_vger_rect},
 };
 use burbomath::{NonNeg, Rect, Vector, time::RelativeDuration};
 use std::time::Duration;

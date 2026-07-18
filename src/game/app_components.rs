@@ -18,13 +18,13 @@ use burbomath::{Complex, Pi, Rect, Size, camera::Camera, non_neg, time::Relative
 use std::time::Duration;
 use winit::event::WindowEvent;
 
-pub struct GameState {
+pub struct AppComponents {
     game_logic: GameLogic,
     event_handler: EventHandler,
     camera: Camera<f32>,
 }
 
-impl GameState {
+impl AppComponents {
     pub fn new() -> Self {
         Self {
             game_logic: GameLogic::new(),

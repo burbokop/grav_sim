@@ -1,9 +1,11 @@
+use crate::utils::{
+    convertions::into_vger_point,
+    misc::{for_each_pair_cycled, map_range},
+};
 use burbomath::{Angle, Complex, Ellipse, NonNeg, Point, Vector};
 use core::f32;
 use std::{f32::consts::PI, time::Duration};
 use vger::{Color, PaintIndex};
-
-use crate::game::utils::{for_each_pair_cycled, into_vger_point, map_range};
 
 pub(crate) fn draw_circle(
     vger: &mut vger::Vger,
