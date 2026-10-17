@@ -62,16 +62,20 @@ impl GameLogic {
             Color::from_u32(0xff884034),
             Color::from_u32(0xffffb8ff),
             vec![
-                WOMSatellite {
-                    body: body0.clone(),
-                    orbit_radius: M(100000.),
-                    orbit_angle: Angle::from_degrees(123_f32),
-                },
-                WOMSatellite {
-                    body: body1,
-                    orbit_radius: M(400000.),
-                    orbit_angle: Angle::from_degrees(21_f32),
-                },
+                WOMSatellite::from_(
+                    body0.clone(),
+                    M(100000.),
+                    M(50000.),
+                    Angle::from_degrees(0_f32),
+                    Angle::from_degrees(123_f32),
+                ),
+                WOMSatellite::from_(
+                    body1,
+                    M(400000.),
+                    M(300000.),
+                    Angle::from_degrees(0_f32),
+                    Angle::from_degrees(21_f32),
+                ),
             ],
         ));
 

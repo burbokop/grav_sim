@@ -1,5 +1,5 @@
 use crate::{
-    game::world_object_model::WOMCelestialBody,
+    game::{draw::common::draw_fading_ellipse, world_object_model::WOMCelestialBody},
     utils::convertions::{into_vger_color, into_vger_point},
 };
 use burbomath::{Point, Vector};
@@ -24,15 +24,28 @@ fn draw_celestial_body(vger: &mut vger::Vger, body: &WOMCelestialBody, center: P
 pub fn draw_celestial_body_recursive(
     vger: &mut vger::Vger,
     body: &WOMCelestialBody,
-    center: Point<f32>,
+    f0: Point<f32>,
+    compensatory_scale: f32,
 ) {
-    draw_celestial_body(vger, body, center);
+    draw_celestial_body(vger, body, f0);
 
     for satellite in &body.satellites {
+        draw_fading_ellipse(
+            vger,
+            &satellite.ellipse,
+            satellite.anomaly,
+            into_vger_color(satellite.body.solid_color),
+            compensatory_scale,
+        );
+
         draw_celestial_body_recursive(
             vger,
             &satellite.body,
-            center + Vector::from_polar(satellite.orbit_radius.0, satellite.orbit_angle),
+            satellite
+                .ellipse
+                .point_on_ellipse(satellite.anomaly)
+                .absolute(f0),
+            compensatory_scale,
         );
     }
 }

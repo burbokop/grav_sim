@@ -18,7 +18,7 @@ use crate::{
         misc::apply_transformation,
     },
 };
-use burbomath::{Point, Rect, Vector, camera::Camera};
+use burbomath::{Point, Rect, camera::Camera};
 use std::time::Duration;
 
 mod celestial_body;
@@ -45,7 +45,12 @@ pub(crate) fn draw_scene(
     let world = game_logic.world();
     let vessel_orbit = orbit_to_global(world, game_logic.vessel_orbit().clone());
 
-    draw_celestial_body_recursive(vger, &world.central_body, (0., 0.).into());
+    draw_celestial_body_recursive(
+        vger,
+        &world.central_body,
+        (0., 0.).into(),
+        compensatory_scale,
+    );
 
     draw_elliptic_orbit(
         vger,
@@ -102,7 +107,10 @@ fn trace_global_body_center(
         match trace_global_body_center(
             &satellite.body,
             target,
-            origin + Vector::from_polar(satellite.orbit_radius.0, satellite.orbit_angle),
+            satellite
+                .ellipse
+                .point_on_ellipse(satellite.anomaly)
+                .absolute(origin),
         ) {
             Some(center) => return Some(center),
             None => continue,
