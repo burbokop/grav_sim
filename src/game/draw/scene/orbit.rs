@@ -1,9 +1,6 @@
 use crate::game::{
-    draw::common::draw_fading_ellipse,
-    orbit::EllipticOrbit,
-    world_object_model::{WOMCelestialBody, WOMRoot},
+    draw::common::draw_fading_ellipse, orbit::EllipticOrbit, world_object_model::WOMRoot,
 };
-use burbomath::{NonNeg, Pi, Point, Two, Vector};
 use core::f32;
 use vger::Color;
 
@@ -17,7 +14,7 @@ pub fn draw_elliptic_orbit(
     draw_fading_ellipse(
         vger,
         &orbit.ellipse(),
-        orbit.anomaly().radians() / (NonNeg::<f32>::two() * NonNeg::<f32>::pi()),
+        orbit.anomaly(),
         color,
         compensatory_scale,
     );

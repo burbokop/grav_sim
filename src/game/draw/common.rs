@@ -2,7 +2,7 @@ use crate::utils::{
     convertions::into_vger_point,
     misc::{for_each_pair_cycled, map_range},
 };
-use burbomath::{Angle, Complex, Ellipse, NonNeg, Point, Vector};
+use burbomath::{Angle, Complex, Ellipse, NonNeg, Pi, Point, Two, Vector};
 use core::f32;
 use std::{f32::consts::PI, time::Duration};
 use vger::{Color, PaintIndex};
@@ -73,14 +73,15 @@ pub(crate) fn draw_colored_points(
     })
 }
 
-/// t - from 0 to 1
 pub(crate) fn draw_fading_ellipse(
     vger: &mut vger::Vger,
     ellipse: &Ellipse<f32>,
-    t: NonNeg<f32>,
+    anomaly: Angle<f32>,
     color: Color,
     compensatory_scale: f32,
 ) {
+    let t = anomaly.radians() / (NonNeg::<f32>::two() * NonNeg::<f32>::pi());
+
     if ellipse.x().is_finite() && ellipse.y().is_finite() {
         assert!(ellipse.a().is_finite());
         assert!(ellipse.b().is_finite());

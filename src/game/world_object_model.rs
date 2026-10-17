@@ -1,6 +1,6 @@
-use crate::utils::color::Color;
+use crate::utils::{color::Color, misc::ellipse_from_apo};
 use burbomath::{
-    Angle,
+    Angle, Ellipse,
     physics::{Kg, KgPerM3, M},
 };
 use std::rc::Rc;
@@ -24,8 +24,8 @@ pub struct WOMCelestialBody {
 
 pub struct WOMSatellite {
     pub body: Rc<WOMCelestialBody>,
-    pub orbit_radius: M<f32>,
-    pub orbit_angle: Angle<f32>,
+    pub ellipse: Ellipse<f32>,
+    pub anomaly: Angle<f32>,
 }
 
 pub struct WOMRoot {
@@ -52,6 +52,22 @@ impl WOMCelestialBody {
             solid_color,
             atmosphere_color,
             satellites,
+        }
+    }
+}
+
+impl WOMSatellite {
+    pub fn from_(
+        body: Rc<WOMCelestialBody>,
+        apoapsis: M<f32>,
+        periapsis: M<f32>,
+        periapsis_heading: Angle<f32>,
+        anomaly: Angle<f32>,
+    ) -> Self {
+        Self {
+            body,
+            ellipse: ellipse_from_apo(apoapsis, periapsis, periapsis_heading),
+            anomaly,
         }
     }
 }
