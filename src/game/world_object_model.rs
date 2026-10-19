@@ -1,9 +1,17 @@
-use crate::utils::{color::Color, misc::ellipse_from_apo};
+use crate::{
+    game::orbit::EllipticOrbit,
+    utils::{color::Color, misc::ellipse_from_apo},
+};
 use burbomath::{
-    Angle, Ellipse,
+    Angle, Point,
     physics::{Kg, KgPerM3, M},
 };
-use std::rc::Rc;
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+    time::Duration,
+};
 
 pub enum WOMCelestialBodyType {
     SolidRock,
@@ -19,17 +27,31 @@ pub struct WOMCelestialBody {
     pub atmosphere_thickness: M<f32>,
     pub solid_color: Color,
     pub atmosphere_color: Color,
-    pub satellites: Vec<WOMSatellite>,
+    pub satellites: RefCell<Vec<WOMSatellite>>,
+}
+
+impl WOMCelestialBody {
+    fn proceed(&self, dt: Duration) {
+        for sat in self.satellites.borrow_mut().deref_mut() {
+            sat.orbit.proceed(self, dt);
+            sat.body.proceed(dt);
+        }
+    }
 }
 
 pub struct WOMSatellite {
     pub body: Rc<WOMCelestialBody>,
-    pub ellipse: Ellipse<f32>,
-    pub anomaly: Angle<f32>,
+    pub orbit: EllipticOrbit,
 }
 
 pub struct WOMRoot {
     pub central_body: Rc<WOMCelestialBody>,
+}
+
+impl WOMRoot {
+    pub(crate) fn proceed(&self, dt: Duration) {
+        self.central_body.proceed(dt);
+    }
 }
 
 impl WOMCelestialBody {
@@ -51,13 +73,13 @@ impl WOMCelestialBody {
             atmosphere_thickness,
             solid_color,
             atmosphere_color,
-            satellites,
+            satellites: RefCell::new(satellites),
         }
     }
 }
 
 impl WOMSatellite {
-    pub fn from_(
+    pub fn from_apo(
         body: Rc<WOMCelestialBody>,
         apoapsis: M<f32>,
         periapsis: M<f32>,
@@ -66,8 +88,44 @@ impl WOMSatellite {
     ) -> Self {
         Self {
             body,
-            ellipse: ellipse_from_apo(apoapsis, periapsis, periapsis_heading),
-            anomaly,
+            orbit: EllipticOrbit::new(
+                ellipse_from_apo(apoapsis, periapsis, periapsis_heading),
+                anomaly,
+            ),
         }
     }
+}
+
+fn trace_global_body_center(
+    current: &WOMCelestialBody,
+    target: &WOMCelestialBody,
+    origin: Point<f32>,
+) -> Option<Point<f32>> {
+    if current as *const WOMCelestialBody == target as *const WOMCelestialBody {
+        return Some(origin);
+    }
+
+    for satellite in current.satellites.borrow().deref() {
+        match trace_global_body_center(
+            &satellite.body,
+            target,
+            satellite.orbit.position().absolute(origin),
+        ) {
+            Some(center) => return Some(center),
+            None => continue,
+        }
+    }
+
+    None
+}
+
+pub(crate) fn orbit_to_global(
+    world: &WOMRoot,
+    orbit_parent_body: &WOMCelestialBody,
+    orbit: EllipticOrbit,
+) -> EllipticOrbit {
+    let origin =
+        trace_global_body_center(&world.central_body, orbit_parent_body, (0., 0.).into()).unwrap();
+
+    orbit.map_center(|center| center.absolute(origin))
 }

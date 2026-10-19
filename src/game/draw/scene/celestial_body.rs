@@ -1,8 +1,10 @@
+use std::ops::Deref;
+
 use crate::{
     game::{draw::common::draw_fading_ellipse, world_object_model::WOMCelestialBody},
     utils::convertions::{into_vger_color, into_vger_point},
 };
-use burbomath::{Point, Vector};
+use burbomath::Point;
 
 fn draw_celestial_body(vger: &mut vger::Vger, body: &WOMCelestialBody, center: Point<f32>) {
     if center.x().is_finite() && center.y().is_finite() {
@@ -29,11 +31,11 @@ pub fn draw_celestial_body_recursive(
 ) {
     draw_celestial_body(vger, body, f0);
 
-    for satellite in &body.satellites {
+    for satellite in body.satellites.borrow().deref() {
         draw_fading_ellipse(
             vger,
-            &satellite.ellipse,
-            satellite.anomaly,
+            &satellite.orbit.ellipse(),
+            satellite.orbit.anomaly(),
             into_vger_color(satellite.body.solid_color),
             compensatory_scale,
         );
@@ -41,10 +43,7 @@ pub fn draw_celestial_body_recursive(
         draw_celestial_body_recursive(
             vger,
             &satellite.body,
-            satellite
-                .ellipse
-                .point_on_ellipse(satellite.anomaly)
-                .absolute(f0),
+            satellite.orbit.position().absolute(f0),
             compensatory_scale,
         );
     }

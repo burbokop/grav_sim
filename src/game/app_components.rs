@@ -46,7 +46,7 @@ impl AppComponents {
         self.game_logic.update(&self.event_handler, dt);
 
         if self.event_handler.center_on_vessel_mode() {
-            let target_point = self.game_logic.vessel_orbit().position();
+            let target_point = self.game_logic.vessel_orbit_in_global_cs().position();
             let window_center = window_rect.center();
             self.camera.translate_to_target(target_point, window_center);
         }
@@ -87,7 +87,9 @@ fn produce_ui_data(game_logic: &GameLogic, event_handler: &EventHandler) -> UIDa
             / game_logic.vessel().kinematic_body.max_thrust().into_inner(),
     };
 
-    let tangential_velocity = game_logic.vessel_orbit().tangential_velocity(G);
+    let tangential_velocity = game_logic
+        .vessel_orbit()
+        .tangential_velocity(game_logic.vessel_parent_body(), G);
 
     let heading = game_logic.vessel().kinematic_body.complex_heading();
 
@@ -103,7 +105,11 @@ fn produce_ui_data(game_logic: &GameLogic, event_handler: &EventHandler) -> UIDa
         radial_out: tangential_velocity.norm() * right_axis,
         maneuver: if event_handler.manuever_planner_mode() {
             let manuever = game_logic.manuever().as_ref().unwrap();
-            let delta_v = manuever.delta_v(&game_logic.vessel_orbit(), G);
+            let delta_v = manuever.delta_v(
+                game_logic.vessel_parent_body(),
+                &game_logic.vessel_orbit(),
+                G,
+            );
 
             Some(delta_v * top_axis)
         } else {
@@ -117,7 +123,11 @@ fn produce_ui_data(game_logic: &GameLogic, event_handler: &EventHandler) -> UIDa
         time_to_manuever: game_logic
             .manuever()
             .as_ref()
-            .map(|m| game_logic.vessel_orbit().time_to(m.delta_v_anomaly))
+            .map(|m| {
+                game_logic
+                    .vessel_orbit()
+                    .time_to(game_logic.vessel_parent_body(), m.delta_v_anomaly)
+            })
             .unwrap_or(RelativeDuration::from_secs(0)),
         manuever_duration: game_logic
             .manuever()

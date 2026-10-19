@@ -1,4 +1,4 @@
-use crate::game::orbit::EllipticOrbit;
+use crate::game::{orbit::EllipticOrbit, world_object_model::WOMCelestialBody};
 use burbomath::{Angle, DeltaAngle, NonNeg, Point, Vector};
 use std::time::Duration;
 
@@ -15,11 +15,15 @@ pub struct Manuever {
 impl Manuever {
     pub fn delta_v(
         &self,
+        parent_body: &WOMCelestialBody,
         initial_orbit: &EllipticOrbit,
         gravitational_constant: f32,
     ) -> Vector<f32> {
-        let tangential_velocity =
-            initial_orbit.tangential_velocity_at(self.delta_v_anomaly, gravitational_constant);
+        let tangential_velocity = initial_orbit.tangential_velocity_at(
+            parent_body,
+            self.delta_v_anomaly,
+            gravitational_constant,
+        );
         self.relative_delta_v * tangential_velocity.rotor()
     }
 
@@ -43,12 +47,16 @@ impl Manuever {
 
     pub fn accelerate_towards_prograde(
         &mut self,
+        parent_body: &WOMCelestialBody,
         initial_orbit: &EllipticOrbit,
         dt: Duration,
         gravitational_constant: f32,
     ) {
-        let tangential_velocity =
-            initial_orbit.tangential_velocity_at(self.delta_v_anomaly, gravitational_constant);
+        let tangential_velocity = initial_orbit.tangential_velocity_at(
+            parent_body,
+            self.delta_v_anomaly,
+            gravitational_constant,
+        );
         self.relative_delta_v += Vector::from((1., 0.))
             * tangential_velocity.len().into_inner()
             * VELOCITY_CHANGE_SPEED_FACTOR
@@ -57,12 +65,16 @@ impl Manuever {
 
     pub fn accelerate_towards_retrograde(
         &mut self,
+        parent_body: &WOMCelestialBody,
         initial_orbit: &EllipticOrbit,
         dt: Duration,
         gravitational_constant: f32,
     ) {
-        let tangential_velocity =
-            initial_orbit.tangential_velocity_at(self.delta_v_anomaly, gravitational_constant);
+        let tangential_velocity = initial_orbit.tangential_velocity_at(
+            parent_body,
+            self.delta_v_anomaly,
+            gravitational_constant,
+        );
         self.relative_delta_v += Vector::from((-1., 0.))
             * tangential_velocity.len().into_inner()
             * VELOCITY_CHANGE_SPEED_FACTOR
@@ -71,12 +83,16 @@ impl Manuever {
 
     pub fn accelerate_towards_radial_in(
         &mut self,
+        parent_body: &WOMCelestialBody,
         initial_orbit: &EllipticOrbit,
         dt: Duration,
         gravitational_constant: f32,
     ) {
-        let tangential_velocity =
-            initial_orbit.tangential_velocity_at(self.delta_v_anomaly, gravitational_constant);
+        let tangential_velocity = initial_orbit.tangential_velocity_at(
+            parent_body,
+            self.delta_v_anomaly,
+            gravitational_constant,
+        );
         self.relative_delta_v += Vector::from((0., -1.))
             * tangential_velocity.len().into_inner()
             * VELOCITY_CHANGE_SPEED_FACTOR
@@ -85,21 +101,31 @@ impl Manuever {
 
     pub fn accelerate_towards_radial_out(
         &mut self,
+        parent_body: &WOMCelestialBody,
         initial_orbit: &EllipticOrbit,
         dt: Duration,
         gravitational_constant: f32,
     ) {
-        let tangential_velocity =
-            initial_orbit.tangential_velocity_at(self.delta_v_anomaly, gravitational_constant);
+        let tangential_velocity = initial_orbit.tangential_velocity_at(
+            parent_body,
+            self.delta_v_anomaly,
+            gravitational_constant,
+        );
         self.relative_delta_v += Vector::from((0., 1.))
             * tangential_velocity.len().into_inner()
             * VELOCITY_CHANGE_SPEED_FACTOR
             * dt.as_secs_f32();
     }
 
-    pub fn proceed(&mut self, initial_orbit: &EllipticOrbit, gravitational_constant: f32) {
+    pub fn proceed(
+        &mut self,
+        parent_body: &WOMCelestialBody,
+        initial_orbit: &EllipticOrbit,
+        gravitational_constant: f32,
+    ) {
         self.orbit = initial_orbit.accelerated_at_anomaly(
-            self.delta_v(initial_orbit, gravitational_constant),
+            parent_body,
+            self.delta_v(parent_body, initial_orbit, gravitational_constant),
             self.delta_v_anomaly,
             gravitational_constant,
         );

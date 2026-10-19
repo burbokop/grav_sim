@@ -9,9 +9,10 @@
     - ~~display of velocity, apoapsis, periapsis, delta v, time to transition points~~
     - ~~orbit that fades behind~~
     - ~~time warp with 1-9 keys~~
+    - Current distance to the center / surface of the parent body 
 4. Solar system builder
     - ~~World object model~~
-    - Celestial bodies motion
+    - ~~Celestial bodies motion~~
     - Serialization
     - World edit ui
     - Integration

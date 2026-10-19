@@ -525,7 +525,7 @@ pub fn draw_time_info(
     draw_text_centered(
         vger,
         bb.center(),
-        &format!("Time speed: {}X", data.time_speed),
+        &format!("Time speed: {}X (1-9 to change)", data.time_speed),
         14,
         UI_MANEUVER_COLOR,
         None,

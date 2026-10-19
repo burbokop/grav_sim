@@ -140,7 +140,7 @@ pub(crate) fn draw_ui(
 
     draw_controls_info(vger, palette, controls_info_bb, &data.controls_info);
 
-    let time_info_size: Size<_> = (125., 40.).into();
+    let time_info_size: Size<_> = (235., 40.).into();
     let time_info_right_margin = 30.;
     let time_info_bottom_margin = 30.;
 
