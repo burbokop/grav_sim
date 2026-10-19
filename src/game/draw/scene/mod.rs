@@ -10,15 +10,14 @@ use crate::{
         },
         event_handler::EventHandler,
         game_logic::GameLogic,
-        orbit::EllipticOrbit,
-        world_object_model::{WOMCelestialBody, WOMRoot},
+        world_object_model::orbit_to_global,
     },
     utils::{
         convertions::{into_vger_point, into_vger_rect},
         misc::apply_transformation,
     },
 };
-use burbomath::{Point, Rect, camera::Camera};
+use burbomath::{Rect, camera::Camera};
 use std::time::Duration;
 
 mod celestial_body;
@@ -43,7 +42,11 @@ pub(crate) fn draw_scene(
 
     let compensatory_scale = 1. / camera.transformation().average_scale();
     let world = game_logic.world();
-    let vessel_orbit = orbit_to_global(world, game_logic.vessel_orbit().clone());
+    let vessel_orbit = orbit_to_global(
+        world,
+        game_logic.vessel_parent_body(),
+        game_logic.vessel_orbit().clone(),
+    );
 
     draw_celestial_body_recursive(
         vger,
@@ -64,6 +67,7 @@ pub(crate) fn draw_scene(
         vger,
         palette,
         game_logic.vessel(),
+        game_logic.vessel_parent_body(),
         &vessel_orbit,
         G,
         compensatory_scale,
@@ -72,7 +76,11 @@ pub(crate) fn draw_scene(
 
     if event_handler.manuever_planner_mode() {
         if let Some(manuever) = &game_logic.manuever() {
-            let manuever_orbit = orbit_to_global(world, manuever.orbit.clone());
+            let manuever_orbit = orbit_to_global(
+                world,
+                game_logic.vessel_parent_body(),
+                manuever.orbit.clone(),
+            );
             let manuever_point = manuever.delta_v_point(&vessel_orbit);
 
             vger.fill_circle(
@@ -92,40 +100,4 @@ pub(crate) fn draw_scene(
     }
 
     vger.restore();
-}
-
-fn trace_global_body_center(
-    current: &WOMCelestialBody,
-    target: &WOMCelestialBody,
-    origin: Point<f32>,
-) -> Option<Point<f32>> {
-    if current as *const WOMCelestialBody == target as *const WOMCelestialBody {
-        return Some(origin);
-    }
-
-    for satellite in &current.satellites {
-        match trace_global_body_center(
-            &satellite.body,
-            target,
-            satellite
-                .ellipse
-                .point_on_ellipse(satellite.anomaly)
-                .absolute(origin),
-        ) {
-            Some(center) => return Some(center),
-            None => continue,
-        }
-    }
-
-    None
-}
-
-fn orbit_to_global(world: &WOMRoot, orbit: EllipticOrbit) -> EllipticOrbit {
-    let vessel_parent_body = orbit.body().upgrade().unwrap();
-
-    let origin =
-        trace_global_body_center(&world.central_body, &vessel_parent_body, (0., 0.).into())
-            .unwrap();
-
-    orbit.map_center(|center| center.absolute(origin))
 }

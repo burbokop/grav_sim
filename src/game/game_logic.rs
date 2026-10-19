@@ -5,7 +5,9 @@ use crate::{
         manuever::Manuever,
         orbit::EllipticOrbit,
         vessel::{KinematicBody, Vessel},
-        world_object_model::{WOMCelestialBody, WOMCelestialBodyType, WOMRoot, WOMSatellite},
+        world_object_model::{
+            WOMCelestialBody, WOMCelestialBodyType, WOMRoot, WOMSatellite, orbit_to_global,
+        },
     },
     utils::color::Color,
 };
@@ -21,6 +23,7 @@ use std::{
 pub struct GameLogic {
     vessel: Vessel,
     world: WOMRoot,
+    vessel_parent_body: Rc<WOMCelestialBody>,
     vessel_orbit: EllipticOrbit,
     manuever: Option<Manuever>,
     time_speed: f32,
@@ -62,14 +65,14 @@ impl GameLogic {
             Color::from_u32(0xff884034),
             Color::from_u32(0xffffb8ff),
             vec![
-                WOMSatellite::from_(
+                WOMSatellite::from_apo(
                     body0.clone(),
                     M(100000.),
                     M(50000.),
                     Angle::from_degrees(0_f32),
                     Angle::from_degrees(123_f32),
                 ),
-                WOMSatellite::from_(
+                WOMSatellite::from_apo(
                     body1,
                     M(400000.),
                     M(300000.),
@@ -92,11 +95,8 @@ impl GameLogic {
             world: WOMRoot {
                 central_body: central_body.clone(),
             },
-            vessel_orbit: EllipticOrbit::new(
-                Rc::downgrade(&body0),
-                ellipse,
-                Angle::from_radians(0.),
-            ),
+            vessel_parent_body: body0.clone(),
+            vessel_orbit: EllipticOrbit::new(ellipse, Angle::from_radians(0.)),
             manuever: None,
             time_speed: 1.,
         }
@@ -136,9 +136,23 @@ impl GameLogic {
         &self.vessel_orbit
     }
 
+    pub fn vessel_orbit_in_global_cs(&self) -> EllipticOrbit {
+        orbit_to_global(
+            &self.world,
+            &self.vessel_parent_body,
+            self.vessel_orbit.clone(),
+        )
+    }
+
+    pub fn vessel_parent_body(&self) -> &WOMCelestialBody {
+        &self.vessel_parent_body
+    }
+
     pub fn update(&mut self, event_handler: &EventHandler, dt: Duration) {
         {
             let dt = Duration::from_secs_f32(dt.as_secs_f32() * self.time_speed);
+
+            self.world.proceed(dt);
 
             if event_handler.w_pressed() {
                 self.vessel.kinematic_body.thrust_up(dt);
@@ -148,7 +162,9 @@ impl GameLogic {
                 self.vessel.kinematic_body.brake_thrust_change(dt);
             }
 
-            let tangential_velocity = self.vessel_orbit.tangential_velocity(G);
+            let tangential_velocity = self
+                .vessel_orbit
+                .tangential_velocity(&self.vessel_parent_body, G);
 
             if event_handler.x_pressed() {
                 self.vessel.kinematic_body.brake_rotation(dt);
@@ -185,7 +201,7 @@ impl GameLogic {
                             .expect(
                                 "Should not enter AutoRotationTarget::Maneuver if manuever is None",
                             )
-                            .delta_v(&self.vessel_orbit, G)
+                            .delta_v(&self.vessel_parent_body, &self.vessel_orbit, G)
                             .angle();
                         self.vessel.kinematic_body.rotate_to(target_angle, dt)
                     }
@@ -195,16 +211,18 @@ impl GameLogic {
             self.vessel.kinematic_body.proceed(dt);
 
             if self.vessel.kinematic_body.acceleration().into_inner() > f32::EPSILON {
-                let delta_v = self
-                    .vessel_orbit
-                    .accelerate(self.vessel.kinematic_body.acceleration_vector(), dt);
+                let delta_v = self.vessel_orbit.accelerate(
+                    &self.vessel_parent_body,
+                    self.vessel.kinematic_body.acceleration_vector(),
+                    dt,
+                );
 
                 if let Some(manuever) = &mut self.manuever {
                     manuever.relative_delta_v -= delta_v;
                 }
             }
 
-            self.vessel_orbit.proceed(dt);
+            self.vessel_orbit.proceed(&self.vessel_parent_body, dt);
 
             if event_handler.manuever_planner_mode() {
                 if let Some(manuever) = &mut self.manuever {
@@ -213,16 +231,36 @@ impl GameLogic {
                     } else if event_handler.greater_pressed() {
                         manuever.move_start_anomaly_forward(dt);
                     } else if event_handler.left_arrow_pressed() {
-                        manuever.accelerate_towards_radial_out(&self.vessel_orbit, dt, G);
+                        manuever.accelerate_towards_radial_out(
+                            &self.vessel_parent_body,
+                            &self.vessel_orbit,
+                            dt,
+                            G,
+                        );
                     } else if event_handler.right_arrow_pressed() {
-                        manuever.accelerate_towards_radial_in(&self.vessel_orbit, dt, G);
+                        manuever.accelerate_towards_radial_in(
+                            &self.vessel_parent_body,
+                            &self.vessel_orbit,
+                            dt,
+                            G,
+                        );
                     } else if event_handler.up_arrow_pressed() {
-                        manuever.accelerate_towards_prograde(&self.vessel_orbit, dt, G);
+                        manuever.accelerate_towards_prograde(
+                            &self.vessel_parent_body,
+                            &self.vessel_orbit,
+                            dt,
+                            G,
+                        );
                     } else if event_handler.down_arrow_pressed() {
-                        manuever.accelerate_towards_retrograde(&self.vessel_orbit, dt, G);
+                        manuever.accelerate_towards_retrograde(
+                            &self.vessel_parent_body,
+                            &self.vessel_orbit,
+                            dt,
+                            G,
+                        );
                     }
 
-                    manuever.proceed(&self.vessel_orbit, G);
+                    manuever.proceed(&self.vessel_parent_body, &self.vessel_orbit, G);
                 }
             }
         }

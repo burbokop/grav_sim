@@ -6,6 +6,7 @@ use crate::game::{
     },
     orbit::EllipticOrbit,
     vessel::Vessel,
+    world_object_model::WOMCelestialBody,
 };
 use std::time::Duration;
 
@@ -13,6 +14,7 @@ pub fn draw_vessel(
     vger: &mut vger::Vger,
     palette: &Palette,
     vessel: &Vessel,
+    vessel_parent_body: &WOMCelestialBody,
     orbit: &EllipticOrbit,
     gravitational_constant: f32,
     compensatory_scale: f32,
@@ -25,17 +27,12 @@ pub fn draw_vessel(
         assert!(orbit.ellipse().i().is_finite());
     }
 
-    let body = orbit.body().upgrade().unwrap();
-
     let p = orbit.ellipse().point_on_ellipse(orbit.anomaly());
     if !(p.x().is_finite() && p.y().is_finite()) {
         return;
     }
 
-    let vel = orbit
-        .ellipse()
-        .tangential_velocity(orbit.anomaly(), body.mass.clone(), gravitational_constant)
-        .unwrap();
+    let vel = orbit.tangential_velocity(vessel_parent_body, gravitational_constant);
 
     assert!(vel.x().is_finite());
     assert!(vel.y().is_finite());

@@ -1,22 +1,17 @@
 use crate::game::{constants::G, world_object_model::WOMCelestialBody};
 use burbomath::{Angle, Ellipse, NonNeg, Point, Vector, time::RelativeDuration};
 use core::f32;
-use std::{rc::Weak, time::Duration};
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct EllipticOrbit {
-    body: Weak<WOMCelestialBody>,
     ellipse: Ellipse<f32>,
     anomaly: Angle<f32>,
 }
 
 impl EllipticOrbit {
-    pub fn new(body: Weak<WOMCelestialBody>, ellipse: Ellipse<f32>, anomaly: Angle<f32>) -> Self {
-        Self {
-            body,
-            ellipse,
-            anomaly,
-        }
+    pub fn new(ellipse: Ellipse<f32>, anomaly: Angle<f32>) -> Self {
+        Self { ellipse, anomaly }
     }
 
     pub fn anomaly(&self) -> Angle<f32> {
@@ -35,25 +30,24 @@ impl EllipticOrbit {
         self.ellipse.f0()
     }
 
-    pub fn body(&self) -> &Weak<WOMCelestialBody> {
-        &self.body
-    }
-
-    pub fn tangential_velocity(&self, gravitational_constant: f32) -> Vector<f32> {
-        let body = self.body.upgrade().unwrap();
+    pub fn tangential_velocity(
+        &self,
+        parent_body: &WOMCelestialBody,
+        gravitational_constant: f32,
+    ) -> Vector<f32> {
         self.ellipse
-            .tangential_velocity(self.anomaly, body.mass.clone(), gravitational_constant)
+            .tangential_velocity(self.anomaly, parent_body.mass, gravitational_constant)
             .unwrap()
     }
 
     pub fn tangential_velocity_at(
         &self,
+        parent_body: &WOMCelestialBody,
         anomaly: Angle<f32>,
         gravitational_constant: f32,
     ) -> Vector<f32> {
-        let body = self.body.upgrade().unwrap();
         self.ellipse
-            .tangential_velocity(anomaly, body.mass.clone(), gravitational_constant)
+            .tangential_velocity(anomaly, parent_body.mass, gravitational_constant)
             .unwrap()
     }
 
@@ -69,33 +63,33 @@ impl EllipticOrbit {
         self.ellipse.point_on_ellipse(self.anomaly)
     }
 
-    pub fn time_to(&self, anomaly: Angle<f32>) -> RelativeDuration {
-        let body = self.body.upgrade().unwrap();
+    pub fn time_to(&self, parent_body: &WOMCelestialBody, anomaly: Angle<f32>) -> RelativeDuration {
         self.ellipse
-            .relative_time_between_anomalies(self.anomaly, anomaly, body.mass, G)
+            .relative_time_between_anomalies(self.anomaly, anomaly, parent_body.mass, G)
     }
 
     /// Changes orbit and returns delta velocity
-    pub fn accelerate(&mut self, acceleration: Vector<f32>, dt: Duration) -> Vector<f32> {
-        let body = self.body.upgrade().unwrap();
-
+    pub fn accelerate(
+        &mut self,
+        parent_body: &WOMCelestialBody,
+        acceleration: Vector<f32>,
+        dt: Duration,
+    ) -> Vector<f32> {
         let position = self.ellipse.point_on_ellipse(self.anomaly);
 
         self.ellipse =
             self.ellipse
-                .accelerated(self.anomaly, body.mass.clone(), G, dt, acceleration);
+                .accelerated(self.anomaly, parent_body.mass, G, dt, acceleration);
 
         self.anomaly = self.ellipse.anomaly(position);
 
         acceleration * dt.as_secs_f32()
     }
 
-    pub fn proceed(&mut self, dt: Duration) {
-        let body = self.body.upgrade().unwrap();
-
+    pub fn proceed(&mut self, parent_body: &WOMCelestialBody, dt: Duration) {
         let angular_velocity = self
             .ellipse
-            .angular_velocity(self.anomaly, body.mass.clone(), G)
+            .angular_velocity(self.anomaly, parent_body.mass, G)
             .unwrap();
 
         self.anomaly += angular_velocity * dt.as_secs_f32();
@@ -103,23 +97,22 @@ impl EllipticOrbit {
 
     pub fn accelerated_at_anomaly(
         &self,
+        parent_body: &WOMCelestialBody,
         delta_v: Vector<f32>,
         delta_v_anomaly: Angle<f32>,
         gravitational_constant: f32,
     ) -> EllipticOrbit {
-        let body = self.body.upgrade().unwrap();
-
         let f0 = self.ellipse.f0();
         let p = self.ellipse.point_on_ellipse(delta_v_anomaly);
 
         let vel = self
             .ellipse
-            .tangential_velocity(delta_v_anomaly, body.mass.clone(), gravitational_constant)
+            .tangential_velocity(delta_v_anomaly, parent_body.mass, gravitational_constant)
             .unwrap();
 
         let (_excentricity, new_f1) = self.ellipse.f1_from_tangential_velocity(
             delta_v_anomaly,
-            body.mass.clone(),
+            parent_body.mass,
             gravitational_constant,
             vel + delta_v,
         );
@@ -131,7 +124,6 @@ impl EllipticOrbit {
         );
 
         EllipticOrbit {
-            body: self.body.clone(),
             ellipse: new_ellipse,
             anomaly: new_anomaly,
         }
@@ -142,7 +134,6 @@ impl EllipticOrbit {
         F: FnOnce(Point<f32>) -> Point<f32>,
     {
         Self {
-            body: self.body,
             ellipse: self.ellipse.map_center(f),
             anomaly: self.anomaly,
         }

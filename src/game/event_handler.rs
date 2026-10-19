@@ -274,8 +274,8 @@ impl EventHandler {
                 if self.control {
                     // zoom
                     if self.center_on_vessel_mode {
-                        let target_point_in_view_port_space =
-                            &camera.transformation() * &game_logic.vessel_orbit().position();
+                        let target_point_in_view_port_space = &camera.transformation()
+                            * &game_logic.vessel_orbit_in_global_cs().position();
 
                         camera.concat_scale_centered(
                             angle_delta_to_scale_division(y),
