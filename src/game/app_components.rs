@@ -143,10 +143,18 @@ fn produce_ui_data(game_logic: &GameLogic, event_handler: &EventHandler) -> UIDa
         todo1: 0.,
     };
 
+    let dst = (game_logic.vessel_orbit().position() - game_logic.vessel_orbit().f0()).len();
+
     let flight_info_data = FlightInfoData {
         velocity: tangential_velocity.len(),
+        current_distance_to_center: dst,
+        current_altitude: dst.into_inner() - game_logic.vessel_parent_body().solid_radius.0,
         apoapsis: game_logic.vessel_orbit().apoapsis(),
         periapsis: game_logic.vessel_orbit().periapsis(),
+        apoapsis_altitude: game_logic.vessel_orbit().apoapsis().into_inner()
+            - game_logic.vessel_parent_body().solid_radius.0,
+        periapsis_altitude: game_logic.vessel_orbit().periapsis()
+            - game_logic.vessel_parent_body().solid_radius.0,
         delta_v_capacity: 100.,
         delta_v_needed_for_manuever: 100.,
         time_to_next_transition_point: 1000.,
