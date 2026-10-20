@@ -98,7 +98,7 @@ pub(crate) fn draw_ui(
 
     draw_manuever_info(vger, palette, manuever_info_bb, &data.manuever_info);
 
-    let flight_info_size: Size<_> = (220., 125.).into();
+    let flight_info_size: Size<_> = (260., 125.).into();
     let flight_info_right_margin = 30.;
     let flight_info_top_margin = 30.;
 

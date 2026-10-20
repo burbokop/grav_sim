@@ -127,5 +127,6 @@ pub(crate) fn orbit_to_global(
     let origin =
         trace_global_body_center(&world.central_body, orbit_parent_body, (0., 0.).into()).unwrap();
 
-    orbit.map_center(|center| center.absolute(origin))
+    let f0 = orbit.f0();
+    orbit.map_center(|center| center.absolute(origin).relative(f0))
 }

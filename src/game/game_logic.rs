@@ -15,10 +15,7 @@ use burbomath::{
     Angle, DeltaAngle, Ellipse, NonNeg, Pi as _,
     physics::{Kg, M, M3},
 };
-use std::{
-    rc::{Rc, Weak},
-    time::Duration,
-};
+use std::{rc::Rc, time::Duration};
 
 pub struct GameLogic {
     vessel: Vessel,

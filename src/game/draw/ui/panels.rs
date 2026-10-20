@@ -154,8 +154,13 @@ pub fn draw_nav_circle(
 
 pub struct FlightInfoData {
     pub velocity: NonNeg<f32>,
+    pub current_distance_to_center: NonNeg<f32>,
+    /// distance to the surface
+    pub current_altitude: f32,
     pub apoapsis: NonNeg<f32>,
     pub periapsis: f32,
+    pub apoapsis_altitude: f32,
+    pub periapsis_altitude: f32,
     pub delta_v_capacity: f32,
     pub delta_v_needed_for_manuever: f32,
     pub time_to_next_transition_point: f32,
@@ -179,7 +184,7 @@ pub fn draw_flight_info(
 
     let left_margin = 8.;
     let right_margin = 8.;
-    let row_count = 6;
+    let row_count = 7;
 
     let row_height = bb.h() / row_count as f32;
     let mut draw_text = |index: usize, text: &str, color: Color| {
@@ -198,20 +203,35 @@ pub fn draw_flight_info(
     };
 
     draw_text(
-        5,
+        6,
         &format!("Velocity: {:.2} m/s", data.velocity),
         UI_PROGRADE_RETROGRADE_COLOR,
     );
 
     draw_text(
+        5,
+        &format!(
+            "Dst {:.2} m (Alt: {:.2} m)",
+            data.current_distance_to_center, data.current_altitude
+        ),
+        UI_PROGRADE_RETROGRADE_COLOR,
+    );
+
+    draw_text(
         4,
-        &format!("Apoapsis: {:.2} m", data.apoapsis),
+        &format!(
+            "Apoapsis: {:.2} m (Alt: {:.2} m)",
+            data.apoapsis, data.apoapsis_altitude
+        ),
         UI_PROGRADE_RETROGRADE_COLOR,
     );
 
     draw_text(
         3,
-        &format!("Periapsis: {:.2} m", data.periapsis),
+        &format!(
+            "Periapsis: {:.2} m (Alt: {:.2} m)",
+            data.periapsis, data.periapsis_altitude
+        ),
         UI_PROGRADE_RETROGRADE_COLOR,
     );
 
