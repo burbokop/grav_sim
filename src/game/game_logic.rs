@@ -15,8 +15,11 @@ use burbomath::{
     Angle, DeltaAngle, Ellipse, NonNeg, Pi as _,
     physics::{Kg, M, M3},
 };
+use serde::{Deserialize, Serialize, de};
 use std::{rc::Rc, time::Duration};
+use uuid::NonNilUuid;
 
+#[derive(Debug)]
 pub struct GameLogic {
     vessel: Vessel,
     world: WOMRoot,
@@ -261,5 +264,65 @@ impl GameLogic {
                 }
             }
         }
+    }
+}
+
+impl Serialize for GameLogic {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct Impl<'a> {
+            vessel: &'a Vessel,
+            world: &'a WOMRoot,
+            vessel_parent_body: NonNilUuid,
+            vessel_orbit: &'a EllipticOrbit,
+            manuever: &'a Option<Manuever>,
+            time_speed: f32,
+        }
+
+        Impl {
+            vessel: &self.vessel,
+            world: &self.world,
+            vessel_parent_body: self.vessel_parent_body.uuid,
+            vessel_orbit: &self.vessel_orbit,
+            manuever: &self.manuever,
+            time_speed: self.time_speed,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for GameLogic {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Impl {
+            vessel: Vessel,
+            world: WOMRoot,
+            vessel_parent_body: NonNilUuid,
+            vessel_orbit: EllipticOrbit,
+            manuever: Option<Manuever>,
+            time_speed: f32,
+        }
+
+        let raw = Impl::deserialize(deserializer)?;
+
+        let vessel_parent_body = raw
+            .world
+            .find_celestial_body(raw.vessel_parent_body)
+            .ok_or(de::Error::custom("Vessel parent body not found"))?;
+
+        Ok(GameLogic {
+            vessel: raw.vessel,
+            world: raw.world,
+            vessel_parent_body,
+            vessel_orbit: raw.vessel_orbit,
+            manuever: raw.manuever,
+            time_speed: raw.time_speed,
+        })
     }
 }

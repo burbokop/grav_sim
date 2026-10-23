@@ -4,6 +4,7 @@ use burbomath::{
     lerp, physics::M,
 };
 use std::ops::{Add, Div, Mul, Neg, Sub};
+use uuid::NonNilUuid;
 
 pub fn apply_transformation(vger: &mut vger::Vger, mat: Matrix<f32>) {
     vger.translate(into_vger_vec(mat.translation()));
@@ -82,4 +83,8 @@ where
     let (r, i) = rot.into();
 
     Ellipse::from_raw(x, y, a, b.into_inner(), r, i)
+}
+
+pub fn new_v4() -> NonNilUuid {
+    NonNilUuid::new(uuid::Uuid::new_v4()).unwrap()
 }

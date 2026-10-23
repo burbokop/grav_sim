@@ -1,11 +1,12 @@
 use crate::game::{orbit::EllipticOrbit, world_object_model::WOMCelestialBody};
 use burbomath::{Angle, DeltaAngle, NonNeg, Point, Vector};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 const ANOMALY_CHANGE_SPEED_FACTOR: f32 = 1.;
 const VELOCITY_CHANGE_SPEED_FACTOR: f32 = 0.1;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Manuever {
     pub orbit: EllipticOrbit,
     pub relative_delta_v: Vector<f32>,

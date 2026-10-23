@@ -136,7 +136,7 @@ impl EventHandler {
             WindowEvent::ActivationTokenDone { .. } => todo!(),
             WindowEvent::Resized(_) => todo!(),
             WindowEvent::Moved(_) => todo!(),
-            WindowEvent::CloseRequested => todo!(),
+            WindowEvent::CloseRequested => self.exit_requested = true,
             WindowEvent::Destroyed => todo!(),
             WindowEvent::DroppedFile(_) => todo!(),
             WindowEvent::HoveredFile(_) => todo!(),

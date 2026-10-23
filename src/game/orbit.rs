@@ -1,9 +1,10 @@
 use crate::game::{constants::G, world_object_model::WOMCelestialBody};
 use burbomath::{Angle, Ellipse, NonNeg, Point, Vector, time::RelativeDuration};
 use core::f32;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EllipticOrbit {
     ellipse: Ellipse<f32>,
     anomaly: Angle<f32>,
