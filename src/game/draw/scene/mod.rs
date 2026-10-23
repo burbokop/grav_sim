@@ -55,13 +55,7 @@ pub(crate) fn draw_scene(
         compensatory_scale,
     );
 
-    draw_elliptic_orbit(
-        vger,
-        game_logic.world(),
-        &vessel_orbit,
-        ORBIT_COLOR,
-        compensatory_scale,
-    );
+    draw_elliptic_orbit(vger, &vessel_orbit, ORBIT_COLOR, compensatory_scale);
 
     draw_vessel(
         vger,
@@ -91,7 +85,6 @@ pub(crate) fn draw_scene(
 
             draw_elliptic_orbit(
                 vger,
-                world,
                 &manuever_orbit,
                 MANUEVER_ORBIT_COLOR,
                 compensatory_scale,

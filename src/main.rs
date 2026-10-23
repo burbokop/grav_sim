@@ -77,7 +77,7 @@ struct App {
 impl App {
     fn new(event_loop: &EventLoop<TriangleAction>) -> Self {
         Self {
-            app_components: AppComponents::new(),
+            app_components: AppComponents::load_or_new().unwrap(),
             proxy: event_loop.create_proxy(),
             window: None,
             state: AppState::Uninitialized,
@@ -174,7 +174,9 @@ impl ApplicationHandler<TriangleAction> for App {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if self.app_components.exit_requested() {
+            self.app_components.save().unwrap();
             event_loop.exit();
+            return;
         }
 
         if let AppState::Running(wgpu_state) = &mut self.state {
@@ -215,7 +217,7 @@ impl ApplicationHandler<TriangleAction> for App {
 
     fn window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        _event_loop: &ActiveEventLoop,
         _window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
@@ -298,7 +300,6 @@ impl ApplicationHandler<TriangleAction> for App {
                     }
                 }
             }
-            WindowEvent::CloseRequested => event_loop.exit(),
             event => self
                 .app_components
                 .handle_event(event, (window_size.width, window_size.height).into()),

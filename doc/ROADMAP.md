@@ -13,7 +13,7 @@
 4. Solar system builder
     - ~~World object model~~
     - ~~Celestial bodies motion~~
-    - Serialization
+    - ~~Serialization~~
     - World edit ui
     - Integration
     - Specific world creation and saving into the repo

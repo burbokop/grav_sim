@@ -15,22 +15,47 @@ use crate::game::{
     game_logic::GameLogic,
 };
 use burbomath::{Complex, Pi, Rect, Size, camera::Camera, non_neg, time::RelativeDuration};
-use std::time::Duration;
+use std::{error::Error, fs, path::PathBuf, time::Duration};
 use winit::event::WindowEvent;
 
 pub struct AppComponents {
     game_logic: GameLogic,
     event_handler: EventHandler,
     camera: Camera<f32>,
+    save_path: PathBuf,
 }
 
 impl AppComponents {
-    pub fn new() -> Self {
-        Self {
-            game_logic: GameLogic::new(),
+    pub fn load_or_new() -> Result<Self, Box<dyn Error>> {
+        let save_path: PathBuf = std::env::home_dir()
+            .unwrap()
+            .join(".grav_sim")
+            .join("save.json");
+
+        let game_logic: GameLogic = if save_path.exists() {
+            serde_json::from_slice(&fs::read(&save_path)?)?
+        } else {
+            GameLogic::new()
+        };
+
+        Ok(Self {
+            game_logic,
             event_handler: Default::default(),
             camera: Camera::default(),
+            save_path,
+        })
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn Error>> {
+        let vec = serde_json::to_vec_pretty(&self.game_logic)?;
+        let dir = self.save_path.parent().ok_or("No parent")?;
+
+        if !dir.exists() {
+            fs::create_dir_all(dir)?;
         }
+
+        fs::write(&self.save_path, vec)?;
+        Ok(())
     }
 
     pub fn exit_requested(&self) -> bool {

@@ -2,8 +2,10 @@ use burbomath::{
     Angle, Complex, DeltaAngle, NonNeg, Sq, Vector, Zero, non_neg, partial_max, partial_min,
 };
 use core::f32;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ThrustControl {
     thrust: NonNeg<f32>,
     thrust_change_velocity: f32,
@@ -71,6 +73,7 @@ impl ThrustControl {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct KinematicBody {
     rotation: Angle<f32>,
     rotation_velocity: DeltaAngle<f32>,
@@ -79,6 +82,7 @@ pub struct KinematicBody {
     mass: NonNeg<f32>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Vessel {
     pub kinematic_body: KinematicBody,
 }
